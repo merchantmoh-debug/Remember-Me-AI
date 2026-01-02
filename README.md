@@ -271,7 +271,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
   title={Coherent State Network Protocol: Wasserstein-Optimal AI Memory},
   author={Al-Zawahreh, Mohamad},
   journal={arXiv preprint arXiv:2024.xxxxx},
-  year={2024}
+  year={2024},
+  doi={10.5281/zenodo.18070153}
 }
 ```
 
@@ -280,6 +281,8 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 MIT License - see [LICENSE](LICENSE)
 
 ## Links
+
+- **Full paper**: [https://doi.org/10.5281/zenodo.18070153](https://doi.org/10.5281/zenodo.18070153)
 
 - Paper: [arXiv link]
 - Demo: [Google Colab notebook]
