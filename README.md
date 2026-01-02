@@ -270,8 +270,7 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for details.
 @article{csnp2024,
   title={Coherent State Network Protocol: Wasserstein-Optimal AI Memory},
   author={Al-Zawahreh, Mohamad},
-  journal={arXiv preprint arXiv:2024.xxxxx},
-  year={2024},
+  howpublished={Zenodo},  year={2025},
   doi={10.5281/zenodo.18070153}
 }
 ```
