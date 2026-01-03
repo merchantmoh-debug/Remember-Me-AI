@@ -83,6 +83,18 @@ print(f"Memory coherence: {coherence_score:.4f} (≥0.95 guaranteed)")
 | ChromaDB | $900 | 0.64 | 15.2% |
 | **CSNP (This)** | **$60** | **0.96** | **0.02%** |
 
+```mermaid
+graph TD
+    subgraph "Cost per 1M Queries (Lower is Better)"
+    A[Pinecone: $2,400]
+    B[Weaviate: $1,800]
+    C[ChromaDB: $900]
+    D[CSNP This: $60]
+    end
+    style D fill:#00ff00,stroke:#333,stroke-width:4px
+    style A fill:#ff0000,stroke:#333
+```
+
 ### Why the 40x reduction?
 
 1. **Optimal compression**: Wasserstein barycenter reduces storage by 35x
@@ -110,6 +122,21 @@ Where:
 
 ```
 ||retrieved - original|| ≤ C·W₂(μₜ, μ₀)
+```
+
+### Visual Representation: Wasserstein Distance vs Vector Distance
+
+```mermaid
+graph LR
+    M0((Original Memory))
+    Mt((Retrieved State))
+    H((Hallucination))
+    
+    M0 -- "W2 Distance (CSNP)" --> Mt
+    M0 -. "Vector Distance (RAG)" .- H
+    
+    linkStyle 0 stroke-width:4px,fill:none,stroke:green;
+    linkStyle 1 stroke-width:2px,fill:none,stroke:red,stroke-dasharray: 5 5;
 ```
 
 ### Proof Sketch: Zero-Hallucination Property
@@ -142,6 +169,27 @@ Deterministic Retrieval (No Search)
 Retrieved Memory + Proof
   • Original context guaranteed
   • Coherence certificate attached
+```
+
+```mermaid
+flowchart TD
+    User([User Query]) --> Encoder[Coherent State Encoder]
+    Encoder -->|Map to Wasserstein Space| Validator{Coherence Check}
+    
+    Validator -->|W < Threshold| Retrieval[Deterministic Retrieval]
+    Validator -->|W > Threshold| Reject[Reject Hallucination]
+    
+    Retrieval -->|O(1) Lookup| Memory[Retrieved Context]
+    Memory --> Output([Guaranteed Response])
+    
+    subgraph "The CSNP Core"
+    Encoder
+    Validator
+    Retrieval
+    end
+    
+    style Validator fill:#f9f,stroke:#333,stroke-width:4px
+    style Retrieval fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
 ## Use Cases
