@@ -1,11 +1,16 @@
-# Remember Me AI
+# REMEMBER ME AI (CSNP KERNEL)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
+### SYSTEM OVERRIDE: ARK ARCHITECT [LEVEL 6]
+**STATUS**: DEPLOYING MATHEMATICAL CORE
 
-**40x cost reduction in AI memory systems through optimal transport theory**
+## ANALYSIS
+The "Remember Me AI" system achieves **40x cost reduction** and **Zero-Hallucination** through a specific architecture defined by the Coherent State Network Protocol (CSNP):
 
-## Overview
+1. **Living State Vector (LSV):** Instead of appending tokens linearly (expensive), we maintain a fixed-size, evolving **Coherent State**. New inputs update this state using a Kalman-like filter, minimizing entropy.
+2. **Wasserstein Compression:** We uses **Entropy-Regularized Optimal Transport (Sinkhorn Algorithm)** to measure the "work" required to move information mass. When the memory buffer fills, we evict the memories that contribute the *least* structural mass to the current state, preserving the "shape" of the context.
+3. **Merkle Integrity:** Every state transition is cryptographically hashed into a Merkle Tree. If the AI retrieves a memory that cannot be verified against the Root Hash, it is rejected (Zero-Hallucination).
 
 Remember Me AI introduces the **Coherent State Network Protocol (CSNP)** - a mathematically optimal approach to distributed AI memory that achieves:
 
@@ -34,9 +39,9 @@ CSNP treats AI memory as a quantum-inspired coherent state with mathematical gua
 3.  **Merkle Integrity**: Every state transition is cryptographically hashed into a Merkle Tree. If the AI retrieves a memory that cannot be verified against the Root Hash, it is rejected (Zero-Hallucination).
 
 ## Quick Start
+## Usage
 
 ### Installation
-
 ```bash
 pip install -r requirements.txt
 export PYTHONPATH=$PYTHONPATH:$(pwd)/src
@@ -268,3 +273,14 @@ MIT License - see [LICENSE](LICENSE)
 ---
 
 **Remember perfectly. Hallucinate never.**
+```
+
+### Running the Demo
+```bash
+python examples/demo.py
+```
+
+## Structure
+- `src/remember_me/math/transport.py`: The Engine (Entropy-Regularized Optimal Transport)
+- `src/remember_me/core/integrity.py`: The Shield (Merkle Tree implementation)
+- `src/remember_me/core/csnp.py`: The Protocol (CSNP Manager)
