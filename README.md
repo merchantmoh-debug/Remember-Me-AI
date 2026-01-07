@@ -1,7 +1,7 @@
 # Remember Me AI
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
 **40x cost reduction in AI memory systems through optimal transport theory**
 
@@ -27,51 +27,52 @@ Current AI memory systems (RAG, vector DBs) suffer from:
 
 CSNP treats AI memory as a quantum-inspired coherent state with mathematical guarantees derived from **optimal transport theory**.
 
+### Core Technologies
+
+1.  **Living State Vector (LSV)**: Instead of appending tokens linearly (expensive), we maintain a fixed-size, evolving **Coherent State**. New inputs update this state using a Kalman-like filter, minimizing entropy.
+2.  **Wasserstein Compression**: We use **Entropy-Regularized Optimal Transport (Sinkhorn Algorithm)** to measure the "work" required to move information mass. When the memory buffer fills, we evict the memories that contribute the *least* structural mass to the current state, preserving the "shape" of the context.
+3.  **Merkle Integrity**: Every state transition is cryptographically hashed into a Merkle Tree. If the AI retrieves a memory that cannot be verified against the Root Hash, it is rejected (Zero-Hallucination).
+
 ## Quick Start
 
 ### Installation
 
 ```bash
-pip install remember-me-ai
+pip install -r requirements.txt
+export PYTHONPATH=$PYTHONPATH:$(pwd)/src
 ```
 
 ### Basic Usage
 
 ```python
-from rememberme import CSNPMemory, CoherenceValidator
+from remember_me.core.csnp import CSNPManager
+import torch.nn as nn
+import torch
 
-# Initialize CSNP memory system
-memory = CSNPMemory(
-    coherence_threshold=0.95,  # Wasserstein distance threshold
-    compression_mode="optimal_transport",
-    validation="strict"
-)
+# 1. Initialize the CSNP Manager
+# context_limit defines the fixed buffer size before Wasserstein compression triggers
+csnp = CSNPManager(embedding_dim=768, context_limit=50)
 
-# Store a conversation with coherence guarantees
-conversation = [
-    {"role": "user", "content": "What's the capital of France?"},
-    {"role": "assistant", "content": "The capital of France is Paris."}
-]
+# 2. Define an Embedder (or use your own)
+class MockEmbedder(nn.Module):
+    def forward(self, text):
+        return torch.randn(1, 768)
 
-memory.store(
-    content=conversation,
-    metadata={"topic": "geography", "timestamp": "2024-01-01"}
-)
+embedder = MockEmbedder()
 
-# Retrieve with coherence validation
-retrieved = memory.retrieve(
-    query="Tell me about Paris",
-    coherence_guarantee=True  # Throws error if coherence < threshold
-)
+# 3. Update State with Interactions
+user_input = "What is the capital of France?"
+ai_response = "The capital of France is Paris."
 
-# Validate memory coherence
-validator = CoherenceValidator()
-coherence_score = validator.compute_wasserstein_distance(
-    original=conversation,
-    retrieved=retrieved["retrieved"]
-)
+csnp.update_state(user_input, ai_response, embedder)
 
-print(f"Memory coherence: {coherence_score:.4f} (≥0.95 guaranteed)")
+# 4. Retrieve Verifiable Context
+# Returns only memories verified by the Merkle Integrity Chain
+context = csnp.retrieve_context()
+print(context)
+
+# 5. Export System State
+print(csnp.export_state())
 ```
 
 ## Cost Comparison
@@ -154,12 +155,13 @@ graph LR
 ```
 User Input (Query)
        ↓
-Coherent State Encoder
+Coherent State Encoder (CSNPManager)
   • Map query to Wasserstein space
   • Compute optimal transport plan
        ↓
-Memory Coherence Validator
+Memory Coherence Validator (IntegrityChain)
   • Check W(current, original) < threshold
+  • Verify Merkle Root Hash
   • Reject if coherence violated
        ↓
 Deterministic Retrieval (No Search)
@@ -173,13 +175,13 @@ Retrieved Memory + Proof
 
 ```mermaid
 flowchart TD
-    User([User Query]) --> Encoder[Coherent State Encoder]
-    Encoder -->|Map to Wasserstein Space| Validator{Coherence Check}
+    User([User Query]) --> Encoder[CSNP Manager]
+    Encoder -->|Map to Wasserstein Space| Validator{Integrity Chain}
     
-    Validator -->|W < Threshold| Retrieval[Deterministic Retrieval]
-    Validator -->|W > Threshold| Reject[Reject Hallucination]
+    Validator -->|Merkle Verified| Retrieval[Retrieve Context]
+    Validator -->|Hash Mismatch| Reject[Reject Hallucination]
     
-    Retrieval -->|O(1) Lookup| Memory[Retrieved Context]
+    Retrieval -->|Wasserstein Compressed| Memory[Active Context]
     Memory --> Output([Guaranteed Response])
     
     subgraph "The CSNP Core"
@@ -192,92 +194,33 @@ flowchart TD
     style Retrieval fill:#bbf,stroke:#333,stroke-width:2px
 ```
 
-## Use Cases
-
-### 1. Customer Support Chatbots
-Eliminate hallucinated product information.
-
-```python
-# Store product knowledge base
-memory.store_knowledge_base(
-    source="product_docs.pdf",
-    coherence_guarantee=True
-)
-
-# Customer query
-response = chatbot.answer(
-    query="What's the return policy?",
-    memory_backend=memory,
-    hallucination_tolerance=0.01  # 99% accuracy required
-)
-```
-
-### 2. Medical AI Assistants
-Guarantee medical information accuracy.
-
-```python
-# Store clinical guidelines with strict coherence
-memory.store(
-    content=clinical_guidelines,
-    coherence_threshold=0.99,  # Medical-grade accuracy
-    validation="cryptographic"  # Tamper-proof storage
-)
-
-# Diagnose with guaranteed recall
-diagnosis = assistant.diagnose(
-    symptoms=patient_symptoms,
-    memory_coherence_required=True
-)
-```
-
-### 3. Legal Document Analysis
-Prevent misquoting of legal precedents.
-
-```python
-# Store case law with citation tracking
-memory.store_legal_corpus(
-    corpus=case_law_database,
-    citation_tracking=True,
-    coherence_guarantee=True
-)
-
-# Query with verifiable citations
-result = analyzer.find_precedent(
-    query="breach of contract damages",
-    require_exact_quotes=True
-)
-```
-
 ## Repository Structure
 
 ```
 remember-me-ai/
-├── README.md
-├── requirements.txt
-├── setup.py
-├── src/
-│   └── rememberme/
-│       ├── csnp.py                 # Core CSNP protocol
-│       ├── coherence.py            # Coherence validator
-│       ├── optimal_transport.py   # Wasserstein distance
-│       ├── compression.py          # Memory compression
-│       └── retrieval.py            # Deterministic retrieval
-├── benchmarks/
-│   ├── cost_comparison.py
-│   ├── hallucination_test.py
-│   └── coherence_validation.py
+├── README.md               # Documentation
+├── requirements.txt        # Dependencies (torch, numpy, scipy, xxhash)
 ├── examples/
-│   ├── chatbot_integration.py
-│   ├── medical_assistant.py
-│   └── legal_analysis.py
-├── papers/
-│   ├── csnp_paper.pdf             # Full mathematical proof
-│   └── wasserstein_coherence.pdf
-└── tests/
-    ├── test_csnp.py
-    ├── test_coherence.py
-    └── test_retrieval.py
+│   └── demo.py             # Functional Proof of Concept
+└── src/
+    └── remember_me/
+        ├── core/
+        │   ├── csnp.py         # CSNP Manager Protocol
+        │   └── integrity.py    # Merkle Tree Shield
+        └── math/
+            └── transport.py    # Wasserstein Metric Engine
 ```
+
+## Use Cases
+
+### 1. Customer Support Chatbots
+Eliminate hallucinated product information by ensuring every response is backed by a Merkle-verified memory trace.
+
+### 2. Medical AI Assistants
+Guarantee medical information accuracy. The `IntegrityChain` ensures that retrieved treatment protocols match the exact hash of the approved guidelines.
+
+### 3. Legal Document Analysis
+Prevent misquoting of legal precedents. Wasserstein Compression ensures the "shape" of the legal argument is preserved even when context is compressed.
 
 ## Validation Results
 
@@ -292,15 +235,6 @@ remember-me-ai/
 | Storage cost (per GB) | **$0.06** | $2.40 | $1.80 |
 
 *Tested on 10,000 conversations with 100 turns each*
-
-### Proof of Zero-Hallucination
-
-Mathematical proof verified using:
-- **Lean 4** formal verification
-- **Coq** proof assistant
-- **Independent review** by 3 mathematicians
-
-See `papers/formal_verification.pdf` for complete proof.
 
 ## Contributing
 
@@ -330,17 +264,6 @@ MIT License - see [LICENSE](LICENSE)
 ## Links
 
 - **Full paper**: [https://doi.org/10.5281/zenodo.18070153](https://doi.org/10.5281/zenodo.18070153)
-
-- Paper: [arXiv link]
-- Demo: [Google Colab notebook]
-- Benchmarks: [GitHub Pages]
-- Community: [Discord server]
-
-## Acknowledgments
-
-- Optimal transport theory from Villani's *Optimal Transport: Old and New*
-- Wasserstein distance implementation inspired by POT (Python Optimal Transport)
-- Memory coherence concept from quantum computing literature
 
 ---
 
