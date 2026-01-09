@@ -2,9 +2,10 @@ import torch
 import torch.nn.functional as F
 import json
 import time
-from typing import List, Any, Dict
+from typing import List, Any, Dict, Optional
 from ..math.transport import WassersteinMetric
 from .integrity import IntegrityChain
+from .embedder import LocalEmbedder
 
 class CSNPManager:
     """
@@ -19,7 +20,13 @@ class CSNPManager:
     to the current narrative trajectory.
     """
 
-    def __init__(self, embedding_dim: int = 768, context_limit: int = 50):
+    def __init__(self, embedding_dim: int = 384, context_limit: int = 50, embedder: Optional[Any] = None):
+        """
+        Args:
+            embedding_dim: Dimension of the embedding vectors (default 384 for all-MiniLM-L6-v2).
+            context_limit: Number of memory slots before compression triggers.
+            embedder: Optional embedding model. If None, uses LocalEmbedder.
+        """
         self.dim = embedding_dim
         self.context_limit = context_limit
 
@@ -27,15 +34,22 @@ class CSNPManager:
         self.metric = WassersteinMetric()
         self.chain = IntegrityChain()
 
+        # Local Independence Layer
+        if embedder is None:
+            self.embedder = LocalEmbedder()
+            self.dim = self.embedder.dim
+        else:
+            self.embedder = embedder
+
         # The "Living State Vector" (LSV)
         # Represents the aggregate direction of the session
-        self.identity_state = torch.zeros(1, embedding_dim)
+        self.identity_state = torch.zeros(1, self.dim)
 
         # Memory Buffer (Compressed Context)
-        self.memory_bank = torch.empty(0, embedding_dim)
+        self.memory_bank = torch.empty(0, self.dim)
         self.text_buffer: List[str] = []
 
-    def update_state(self, user_input: str, ai_response: str, embedding_model: Any):
+    def update_state(self, user_input: str, ai_response: str, embedding_model: Optional[Any] = None):
         """
         CSNP Update Cycle:
         1. Integrity: Hash interaction into Merkle Tree.
@@ -48,9 +62,11 @@ class CSNPManager:
         self.chain.add_entry(turn_text)
 
         # 2. Embed
-        # Assumes embedding_model takes text and returns torch.Tensor [1, D]
+        # Use internal embedder if none provided
+        model = embedding_model if embedding_model else self.embedder
+
         with torch.no_grad():
-            new_emb = embedding_model(turn_text)
+            new_emb = model(turn_text)
             if new_emb.dim() == 1:
                 new_emb = new_emb.unsqueeze(0) # Ensure [1, D]
 
