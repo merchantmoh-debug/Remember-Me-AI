@@ -15,9 +15,13 @@ class MockEmbedder(nn.Module):
 
 def main():
     print(">>> INITIALIZING CSNP KERNEL...")
-    # We set context_limit=3 to force Wasserstein compression immediately
-    csnp = CSNPManager(embedding_dim=768, context_limit=3)
+
+    # 1. Initialize Embedder First (Dependency Injection)
     embedder = MockEmbedder(768)
+
+    # 2. Initialize Manager with the embedder
+    # We set context_limit=3 to force Wasserstein compression immediately
+    csnp = CSNPManager(embedding_dim=768, context_limit=3, embedder=embedder)
 
     conversation = [
         ("Hello", "Hi there!"),
@@ -30,7 +34,7 @@ def main():
 
     print(f"\n>>> PROCESSING STREAM (Limit: 3 slots)")
     for i, (user, ai) in enumerate(conversation):
-        csnp.update_state(user, ai, embedder)
+        csnp.update_state(user, ai)
 
         print(f" [+] Turn {i+1}: {user}")
         print(f"     Merkle Root: {csnp.chain.get_root_hash()[:16]}...")
