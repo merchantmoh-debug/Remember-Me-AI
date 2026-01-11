@@ -13,14 +13,37 @@ class LocalEmbedder:
         else:
             self.device = device
 
-        print(f"Loading local embedding model: {model_name} on {self.device}...")
-        self.model = SentenceTransformer(model_name, device=self.device)
-        self.dim = self.model.get_sentence_embedding_dimension()
+        self.model_name = model_name
+        self.model = None
+        self._dim = None # Lazy load dimension
+
+    @property
+    def dim(self) -> int:
+        """
+        Returns the embedding dimension. Triggers model load if not known.
+        """
+        if self._dim is None:
+             # If we are using the default model, we know it's 384.
+             # But to be safe and support all models, we trigger the load.
+             self._ensure_model_loaded()
+        return self._dim
+
+    @dim.setter
+    def dim(self, value: int):
+        self._dim = value
+
+    def _ensure_model_loaded(self):
+        if self.model is None:
+            print(f"⚡ Bolt: Lazy loading embedding model: {self.model_name} on {self.device}...")
+            self.model = SentenceTransformer(self.model_name, device=self.device)
+            self._dim = self.model.get_sentence_embedding_dimension()
 
     def __call__(self, text: Union[str, List[str]]) -> torch.Tensor:
         """
         Embeds text into a torch tensor [N, D].
         """
+        self._ensure_model_loaded()
+
         if isinstance(text, str):
             text = [text]
 
