@@ -57,6 +57,14 @@ class CSNPManager:
         3. Evolve: Update Identity State (Kalman-like update).
         4. Compress: If full, evict lowest-mass memories via Wasserstein.
         """
+        # 🛡️ Sentinel: Input Validation
+        MAX_INPUT_LENGTH = 10000
+        if len(user_input) > MAX_INPUT_LENGTH:
+             # Truncate rather than reject, to maintain flow but protect memory
+             user_input = user_input[:MAX_INPUT_LENGTH] + "...[TRUNCATED]"
+        if len(ai_response) > MAX_INPUT_LENGTH:
+             ai_response = ai_response[:MAX_INPUT_LENGTH] + "...[TRUNCATED]"
+
         # 1. Integrity
         turn_text = f"USER:{user_input}|AI:{ai_response}"
         self.chain.add_entry(turn_text)
